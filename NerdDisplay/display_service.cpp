@@ -48,24 +48,26 @@ namespace {
     String out;
     out.reserve(in.length());
 
+    auto appendMapped = [&](uint8_t code) { out += (char)code; };
+
     for (size_t i = 0; i < in.length(); i++) {
       const uint8_t c = (uint8_t)in[i];
 
       // UTF-8 Leadbyte C3: ÄÖÜäöüßẞ
       if (c == 0xC3 && (i + 1) < in.length()) {
         const uint8_t n = (uint8_t)in[i + 1];
-        if (n == 0x84) { out += CHAR_AE_UPPER; i++; continue; } // Ä
-        if (n == 0x96) { out += CHAR_OE_UPPER; i++; continue; } // Ö
-        if (n == 0x9C) { out += CHAR_UE_UPPER; i++; continue; } // Ü
-        if (n == 0xA4) { out += CHAR_AE_LOWER; i++; continue; } // ä
-        if (n == 0xB6) { out += CHAR_OE_LOWER; i++; continue; } // ö
-        if (n == 0xBC) { out += CHAR_UE_LOWER; i++; continue; } // ü
-        if (n == 0x9F || n == 0x9E) { out += CHAR_SHARP_S; i++; continue; } // ß/ẞ
+        if (n == 0x84) { appendMapped(CHAR_AE_UPPER); i++; continue; } // Ä
+        if (n == 0x96) { appendMapped(CHAR_OE_UPPER); i++; continue; } // Ö
+        if (n == 0x9C) { appendMapped(CHAR_UE_UPPER); i++; continue; } // Ü
+        if (n == 0xA4) { appendMapped(CHAR_AE_LOWER); i++; continue; } // ä
+        if (n == 0xB6) { appendMapped(CHAR_OE_LOWER); i++; continue; } // ö
+        if (n == 0xBC) { appendMapped(CHAR_UE_LOWER); i++; continue; } // ü
+        if (n == 0x9F || n == 0x9E) { appendMapped(CHAR_SHARP_S); i++; continue; } // ß/ẞ
       }
 
       // UTF-8 C2 B0 => °
       if (c == 0xC2 && (i + 1) < in.length() && (uint8_t)in[i + 1] == 0xB0) {
-        out += CHAR_DEGREE;
+        appendMapped(CHAR_DEGREE);
         i++;
         continue;
       }
