@@ -10,14 +10,18 @@
 struct EffItem { const char* name; textEffect_t eff; };
 
 namespace {
-  constexpr char CHAR_AE_UPPER    = 1;
-  constexpr char CHAR_AE_LOWER    = 2;
-  constexpr char CHAR_OE_UPPER    = 3;
-  constexpr char CHAR_OE_LOWER    = 4;
-  constexpr char CHAR_UE_UPPER    = 5;
-  constexpr char CHAR_UE_LOWER    = 6;
-  constexpr char CHAR_SHARP_S     = 7;
-  constexpr char CHAR_DEGREE      = 8;
+  constexpr uint8_t CHAR_AE_UPPER = 0x80;
+  constexpr uint8_t CHAR_AE_LOWER = 0x81;
+  constexpr uint8_t CHAR_OE_UPPER = 0x82;
+  constexpr uint8_t CHAR_OE_LOWER = 0x83;
+  constexpr uint8_t CHAR_UE_UPPER = 0x84;
+  constexpr uint8_t CHAR_UE_LOWER = 0x85;
+  constexpr uint8_t CHAR_SHARP_S  = 0x86;
+  constexpr uint8_t CHAR_DEGREE   = 0x87;
+
+  // Muss über die gesamte Anzeige-Animation gültig bleiben,
+  // da MD_Parola intern nur den Pointer nutzt.
+  String gMatrixTextBuffer;
 
   // 5x7 Fontdaten (Breite + Spaltenbytes)
   uint8_t fontCharAeUpper[] = { 5, 0x7d, 0x12, 0x11, 0x12, 0x7d };
@@ -71,6 +75,11 @@ namespace {
 
     return out;
   }
+
+  const char* renderTextPtr(const String& in) {
+    gMatrixTextBuffer = matrixTextFromUtf8(in);
+    return gMatrixTextBuffer.c_str();
+  }
 }
 
 template<typename T, size_t N>
@@ -120,37 +129,33 @@ namespace Display {
   }
 
   void showImmediate(const String& s, uint32_t dwellMs) {
-    const String displayText = matrixTextFromUtf8(s);
     // MD_Parola erwartet pause als uint16_t; clampen
     uint16_t pause = (dwellMs > 65535U) ? 65535U : (uint16_t)dwellMs;
-    App::matrix.displayText(displayText.c_str(), PA_CENTER, App::params.speed, pause, PA_PRINT, PA_NO_EFFECT);
+    App::matrix.displayText(renderTextPtr(s), PA_CENTER, App::params.speed, pause, PA_PRINT, PA_NO_EFFECT);
     App::matrix.displayReset();
     App::matrix.displayAnimate();
   }
 
   // Variante ohne Effekte: globale Defaults + globaler dwell
   void startWith(const String& s) {
-    const String displayText = matrixTextFromUtf8(s);
     uint16_t pause = (App::params.dwell > 65535U) ? 65535U : (uint16_t)App::params.dwell;
-    App::matrix.displayText(displayText.c_str(), PA_CENTER, App::params.speed, pause,
+    App::matrix.displayText(renderTextPtr(s), PA_CENTER, App::params.speed, pause,
                             effectFromNameIn(App::params.effect_in),
                             effectFromNameOut(App::params.effect_out));
   }
 
   // Variante mit per-Message Effekten, aber globalem dwell
   void startWith(const String& s, const String& effInName, const String& effOutName) {
-    const String displayText = matrixTextFromUtf8(s);
     const String inName  = effInName.length()  ? effInName  : App::params.effect_in;
     const String outName = effOutName.length() ? effOutName : App::params.effect_out;
     uint16_t pause = (App::params.dwell > 65535U) ? 65535U : (uint16_t)App::params.dwell;
-    App::matrix.displayText(displayText.c_str(), PA_CENTER, App::params.speed, pause,
+    App::matrix.displayText(renderTextPtr(s), PA_CENTER, App::params.speed, pause,
                             effectFromNameIn(inName),
                             effectFromNameOut(outName));
   }
 
   // NEU: per-Message Effekte + per-Message dwell (Override)
   void startWith(const String& s, const String& effInName, const String& effOutName, int32_t dwellOverrideMs) {
-    const String displayText = matrixTextFromUtf8(s);
     const String inName  = effInName.length()  ? effInName  : App::params.effect_in;
     const String outName = effOutName.length() ? effOutName : App::params.effect_out;
 
@@ -158,7 +163,7 @@ namespace Display {
     uint32_t chosen = (dwellOverrideMs >= 0) ? (uint32_t)dwellOverrideMs : base;
     uint16_t pause = (chosen > 65535U) ? 65535U : (uint16_t)chosen;
 
-    App::matrix.displayText(displayText.c_str(), PA_CENTER, App::params.speed, pause,
+    App::matrix.displayText(renderTextPtr(s), PA_CENTER, App::params.speed, pause,
                             effectFromNameIn(inName),
                             effectFromNameOut(outName));
   }
