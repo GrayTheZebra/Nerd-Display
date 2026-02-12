@@ -9,6 +9,82 @@
 // ========================
 struct EffItem { const char* name; textEffect_t eff; };
 
+namespace {
+  constexpr uint8_t CHAR_AE_UPPER = 0x80;
+  constexpr uint8_t CHAR_AE_LOWER = 0x81;
+  constexpr uint8_t CHAR_OE_UPPER = 0x82;
+  constexpr uint8_t CHAR_OE_LOWER = 0x83;
+  constexpr uint8_t CHAR_UE_UPPER = 0x84;
+  constexpr uint8_t CHAR_UE_LOWER = 0x85;
+  constexpr uint8_t CHAR_SHARP_S  = 0x86;
+  constexpr uint8_t CHAR_DEGREE   = 0x87;
+
+  // Muss über die gesamte Anzeige-Animation gültig bleiben,
+  // da MD_Parola intern nur den Pointer nutzt.
+  String gMatrixTextBuffer;
+
+  // 5x7 Fontdaten (Breite + Spaltenbytes)
+  // Glyphen optimiert für 5x8 (sichtbare Umlaut-Punkte bei O/U/a/o/u)
+  uint8_t fontCharAeUpper[] = { 5, 0x79, 0x14, 0x12, 0x14, 0x79 }; // Ä
+  uint8_t fontCharAeLower[] = { 5, 0x20, 0x55, 0x54, 0x79, 0x40 }; // ä
+  uint8_t fontCharOeUpper[] = { 5, 0x3d, 0x42, 0x42, 0x42, 0x3d }; // Ö
+  uint8_t fontCharOeLower[] = { 5, 0x38, 0x45, 0x44, 0x45, 0x38 }; // ö
+  uint8_t fontCharUeUpper[] = { 5, 0x3d, 0x40, 0x40, 0x40, 0x3d }; // Ü
+  uint8_t fontCharUeLower[] = { 5, 0x3c, 0x41, 0x40, 0x21, 0x7c }; // ü
+  uint8_t fontCharSharpS[]  = { 5, 0x24, 0x56, 0x55, 0x54, 0x48 };
+  uint8_t fontCharDegree[]  = { 3, 0x06, 0x09, 0x06 };
+
+  void installSpecialChars() {
+    App::matrix.addChar((uint8_t)CHAR_AE_UPPER, fontCharAeUpper);
+    App::matrix.addChar((uint8_t)CHAR_AE_LOWER, fontCharAeLower);
+    App::matrix.addChar((uint8_t)CHAR_OE_UPPER, fontCharOeUpper);
+    App::matrix.addChar((uint8_t)CHAR_OE_LOWER, fontCharOeLower);
+    App::matrix.addChar((uint8_t)CHAR_UE_UPPER, fontCharUeUpper);
+    App::matrix.addChar((uint8_t)CHAR_UE_LOWER, fontCharUeLower);
+    App::matrix.addChar((uint8_t)CHAR_SHARP_S,  fontCharSharpS);
+    App::matrix.addChar((uint8_t)CHAR_DEGREE,   fontCharDegree);
+  }
+
+  String matrixTextFromUtf8(const String& in) {
+    String out;
+    out.reserve(in.length());
+
+    auto appendMapped = [&](uint8_t code) { out += (char)code; };
+
+    for (size_t i = 0; i < in.length(); i++) {
+      const uint8_t c = (uint8_t)in[i];
+
+      // UTF-8 Leadbyte C3: ÄÖÜäöüßẞ
+      if (c == 0xC3 && (i + 1) < in.length()) {
+        const uint8_t n = (uint8_t)in[i + 1];
+        if (n == 0x84) { appendMapped(CHAR_AE_UPPER); i++; continue; } // Ä
+        if (n == 0x96) { appendMapped(CHAR_OE_UPPER); i++; continue; } // Ö
+        if (n == 0x9C) { appendMapped(CHAR_UE_UPPER); i++; continue; } // Ü
+        if (n == 0xA4) { appendMapped(CHAR_AE_LOWER); i++; continue; } // ä
+        if (n == 0xB6) { appendMapped(CHAR_OE_LOWER); i++; continue; } // ö
+        if (n == 0xBC) { appendMapped(CHAR_UE_LOWER); i++; continue; } // ü
+        if (n == 0x9F || n == 0x9E) { appendMapped(CHAR_SHARP_S); i++; continue; } // ß/ẞ
+      }
+
+      // UTF-8 C2 B0 => °
+      if (c == 0xC2 && (i + 1) < in.length() && (uint8_t)in[i + 1] == 0xB0) {
+        appendMapped(CHAR_DEGREE);
+        i++;
+        continue;
+      }
+
+      out += (char)c;
+    }
+
+    return out;
+  }
+
+  const char* renderTextPtr(const String& in) {
+    gMatrixTextBuffer = matrixTextFromUtf8(in);
+    return gMatrixTextBuffer.c_str();
+  }
+}
+
 template<typename T, size_t N>
 static textEffect_t effFromName(const T (&arr)[N], const String& n, textEffect_t fallback) {
   String u = n; u.trim(); u.toUpperCase();
@@ -46,6 +122,7 @@ namespace Display {
 
   void begin() {
     App::matrix.begin();
+    installSpecialChars();
     applyParams();
     App::matrix.displayClear();
   }
@@ -57,7 +134,7 @@ namespace Display {
   void showImmediate(const String& s, uint32_t dwellMs) {
     // MD_Parola erwartet pause als uint16_t; clampen
     uint16_t pause = (dwellMs > 65535U) ? 65535U : (uint16_t)dwellMs;
-    App::matrix.displayText(s.c_str(), PA_CENTER, App::params.speed, pause, PA_PRINT, PA_NO_EFFECT);
+    App::matrix.displayText(renderTextPtr(s), PA_CENTER, App::params.speed, pause, PA_PRINT, PA_NO_EFFECT);
     App::matrix.displayReset();
     App::matrix.displayAnimate();
   }
@@ -65,7 +142,7 @@ namespace Display {
   // Variante ohne Effekte: globale Defaults + globaler dwell
   void startWith(const String& s) {
     uint16_t pause = (App::params.dwell > 65535U) ? 65535U : (uint16_t)App::params.dwell;
-    App::matrix.displayText(s.c_str(), PA_CENTER, App::params.speed, pause,
+    App::matrix.displayText(renderTextPtr(s), PA_CENTER, App::params.speed, pause,
                             effectFromNameIn(App::params.effect_in),
                             effectFromNameOut(App::params.effect_out));
   }
@@ -75,7 +152,7 @@ namespace Display {
     const String inName  = effInName.length()  ? effInName  : App::params.effect_in;
     const String outName = effOutName.length() ? effOutName : App::params.effect_out;
     uint16_t pause = (App::params.dwell > 65535U) ? 65535U : (uint16_t)App::params.dwell;
-    App::matrix.displayText(s.c_str(), PA_CENTER, App::params.speed, pause,
+    App::matrix.displayText(renderTextPtr(s), PA_CENTER, App::params.speed, pause,
                             effectFromNameIn(inName),
                             effectFromNameOut(outName));
   }
@@ -89,7 +166,7 @@ namespace Display {
     uint32_t chosen = (dwellOverrideMs >= 0) ? (uint32_t)dwellOverrideMs : base;
     uint16_t pause = (chosen > 65535U) ? 65535U : (uint16_t)chosen;
 
-    App::matrix.displayText(s.c_str(), PA_CENTER, App::params.speed, pause,
+    App::matrix.displayText(renderTextPtr(s), PA_CENTER, App::params.speed, pause,
                             effectFromNameIn(inName),
                             effectFromNameOut(outName));
   }
