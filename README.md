@@ -85,6 +85,24 @@ oder
 * **`out`** = MD\_Parola Effektname für Ausblenden (optional, leer = globaler Effekt)
 * **`dwell`** = Anzeigedauer in Millisekunden (optional, `-1` oder leer = globaler dwell)
 
+### Zonen pro Nachricht (Bereiche je Modul)
+
+Wenn das Display aus mehreren Modulen besteht, kann pro Objekt ein Modulbereich angegeben werden
+(`1`-basiert, inklusive Grenzen):
+
+```json
+[
+  {"Bereich":"1-4","text":"Hallo","in":"SCROLL_LEFT","out":"OPENING","dwell":1000},
+  {"Bereich":"5-8","text":"Zebra","in":"PRINT","out":"CLOSING","dwell":3000},
+  "Eintrag ohne Objekt nutzt globale Defaults"
+]
+```
+
+* Unterstützte Feldnamen für den Bereich: `Bereich`, `bereich`, `range`, `zone`
+* Werteformat: `"X-Y"` oder `"X"` (ein einzelnes Modul)
+* Nicht überlappende Bereiche werden gleichzeitig angezeigt.
+* Überlappende Bereiche werden automatisch nacheinander angezeigt.
+
 ### Objektform mit `messages`-Array
 
 ```json

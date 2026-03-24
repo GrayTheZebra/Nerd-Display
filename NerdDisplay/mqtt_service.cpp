@@ -6,6 +6,37 @@
 #include <ArduinoJson.h>
 
 namespace {
+  bool parseZoneRange(const String& rawIn, int16_t& outFrom, int16_t& outTo) {
+    String raw = rawIn;
+    raw.trim();
+    if (!raw.length()) return false;
+
+    raw.replace(" ", "");
+    const int sep = raw.indexOf('-');
+    if (sep < 0) {
+      int v = raw.toInt();
+      if (v <= 0) return false;
+      outFrom = (int16_t)v;
+      outTo   = (int16_t)v;
+      return true;
+    }
+
+    String a = raw.substring(0, sep);
+    String b = raw.substring(sep + 1);
+    if (!a.length() || !b.length()) return false;
+    int from = a.toInt();
+    int to   = b.toInt();
+    if (from <= 0 || to <= 0) return false;
+    if (from > to) {
+      int tmp = from;
+      from = to;
+      to = tmp;
+    }
+    outFrom = (int16_t)from;
+    outTo   = (int16_t)to;
+    return true;
+  }
+
   // Helpers
   inline void publishSetKey(const String &key, const String &val)   { App::mqtt.publish(Topics::set(key).c_str(),   val.c_str(), false); }
   inline void publishSetKey(const String &k, int v)                  { publishSetKey(k, String(v)); }
@@ -96,10 +127,24 @@ namespace {
       DeserializationError err = deserializeJson(doc, raw);
 
       // text + in/out + dwell (ms, -1 => global)
-      auto pushSingle = [&](const String& txt, const String& in, const String& out, int32_t dwellMs) {
+      auto pushSingle = [&](const String& txt, const String& in, const String& out, int32_t dwellMs, int16_t zoneFrom, int16_t zoneTo) {
         String s = txt; s.trim();
         if (!s.length()) return;
-        App::params.messages.push_back( MessageItem{ s, in, out, dwellMs } );
+        const int16_t minZone = 1;
+        const int16_t maxZone = (int16_t)App::cfg.displayCount;
+        if (zoneFrom > 0 && zoneTo > 0) {
+          zoneFrom = constrain(zoneFrom, minZone, maxZone);
+          zoneTo   = constrain(zoneTo,   minZone, maxZone);
+          if (zoneFrom > zoneTo) {
+            const int16_t tmp = zoneFrom;
+            zoneFrom = zoneTo;
+            zoneTo = tmp;
+          }
+        } else {
+          zoneFrom = -1;
+          zoneTo = -1;
+        }
+        App::params.messages.push_back( MessageItem{ s, in, out, dwellMs, zoneFrom, zoneTo } );
       };
 
       if (!err) {
@@ -107,26 +152,46 @@ namespace {
           // Entweder Array<String> oder Array<Object>
           for (JsonVariant v : doc.as<JsonArray>()) {
             if (v.is<const char*>()) {
-              pushSingle(String(v.as<const char*>()), "", "", -1);
+              pushSingle(String(v.as<const char*>()), "", "", -1, -1, -1);
             } else if (v.is<JsonObject>()) {
               String txt = v["text"] | "";
               String ein = v["in"]   | "";
               String eout= v["out"]  | "";
               int32_t d  = (int32_t)(v["dwell"] | -1);
-              pushSingle(txt, ein, eout, d);
+              int16_t zf = -1, zt = -1;
+              if (v["Bereich"].is<const char*>()) {
+                parseZoneRange(String(v["Bereich"].as<const char*>()), zf, zt);
+              } else if (v["bereich"].is<const char*>()) {
+                parseZoneRange(String(v["bereich"].as<const char*>()), zf, zt);
+              } else if (v["range"].is<const char*>()) {
+                parseZoneRange(String(v["range"].as<const char*>()), zf, zt);
+              } else if (v["zone"].is<const char*>()) {
+                parseZoneRange(String(v["zone"].as<const char*>()), zf, zt);
+              }
+              pushSingle(txt, ein, eout, d, zf, zt);
             }
           }
         } else if (doc.is<JsonObject>()) {
           if (doc["messages"].is<JsonArray>()) {
             for (JsonVariant v : doc["messages"].as<JsonArray>()) {
               if (v.is<const char*>()) {
-                pushSingle(String(v.as<const char*>()), "", "", -1);
+                pushSingle(String(v.as<const char*>()), "", "", -1, -1, -1);
               } else if (v.is<JsonObject>()) {
                 String txt = v["text"] | "";
                 String ein = v["in"]   | "";
                 String eout= v["out"]  | "";
                 int32_t d  = (int32_t)(v["dwell"] | -1);
-                pushSingle(txt, ein, eout, d);
+                int16_t zf = -1, zt = -1;
+                if (v["Bereich"].is<const char*>()) {
+                  parseZoneRange(String(v["Bereich"].as<const char*>()), zf, zt);
+                } else if (v["bereich"].is<const char*>()) {
+                  parseZoneRange(String(v["bereich"].as<const char*>()), zf, zt);
+                } else if (v["range"].is<const char*>()) {
+                  parseZoneRange(String(v["range"].as<const char*>()), zf, zt);
+                } else if (v["zone"].is<const char*>()) {
+                  parseZoneRange(String(v["zone"].as<const char*>()), zf, zt);
+                }
+                pushSingle(txt, ein, eout, d, zf, zt);
               }
             }
           } else if (doc["text"].is<const char*>()) {
@@ -134,7 +199,17 @@ namespace {
             String ein = doc["in"]   | "";
             String eout= doc["out"]  | "";
             int32_t d  = (int32_t)(doc["dwell"] | -1);
-            pushSingle(txt, ein, eout, d);
+            int16_t zf = -1, zt = -1;
+            if (doc["Bereich"].is<const char*>()) {
+              parseZoneRange(String(doc["Bereich"].as<const char*>()), zf, zt);
+            } else if (doc["bereich"].is<const char*>()) {
+              parseZoneRange(String(doc["bereich"].as<const char*>()), zf, zt);
+            } else if (doc["range"].is<const char*>()) {
+              parseZoneRange(String(doc["range"].as<const char*>()), zf, zt);
+            } else if (doc["zone"].is<const char*>()) {
+              parseZoneRange(String(doc["zone"].as<const char*>()), zf, zt);
+            }
+            pushSingle(txt, ein, eout, d, zf, zt);
           }
         }
       }
@@ -146,7 +221,7 @@ namespace {
           s = s.substring(1, s.length() - 1);
         }
         if (!s.length()) s = "Nerd-Display";
-        pushSingle(s, "", "", -1);
+        pushSingle(s, "", "", -1, -1, -1);
       }
 
       // Neustarten

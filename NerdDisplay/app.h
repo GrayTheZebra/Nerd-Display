@@ -21,6 +21,8 @@ struct MessageItem {
   String eff_in;   // optional, leer => globale Defaults
   String eff_out;  // optional, leer => globale Defaults
   int32_t dwell_ms = -1;  // optional; -1 => App::params.dwell verwenden
+  int16_t zone_from = -1; // optional; 1-basiert inkl., -1 => gesamte Anzeige
+  int16_t zone_to   = -1; // optional; 1-basiert inkl., -1 => gesamte Anzeige
 };
 
 struct RuntimeParams {

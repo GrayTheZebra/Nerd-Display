@@ -10,6 +10,12 @@
 struct EffItem { const char* name; textEffect_t eff; };
 
 namespace {
+#ifdef MAX_ZONES
+  constexpr uint8_t DISPLAY_ZONE_LIMIT = MAX_ZONES;
+#else
+  constexpr uint8_t DISPLAY_ZONE_LIMIT = 4;
+#endif
+
   // ====== Sonderzeichen (Umlaute + Grad + ß) ======
   constexpr uint8_t CHAR_AE_UPPER = 0x80;
   constexpr uint8_t CHAR_AE_LOWER = 0x81;
@@ -22,6 +28,7 @@ namespace {
 
   // Muss über die gesamte Anzeige-Animation gültig bleiben
   String gMatrixTextBuffer;
+  std::vector<String> gZoneTextBuffers;
 
   // ====== Glyphen ======
   uint8_t fontCharAeUpper[] = { 5, 0x79, 0x14, 0x12, 0x14, 0x79 }; // Ä
@@ -79,6 +86,26 @@ namespace {
   const char* renderTextPtr(const String& in) {
     gMatrixTextBuffer = matrixTextFromUtf8(in);
     return gMatrixTextBuffer.c_str();
+  }
+
+  const char* renderZoneTextPtr(size_t zoneId, const String& in) {
+    if (gZoneTextBuffers.size() <= zoneId) gZoneTextBuffers.resize(zoneId + 1);
+    gZoneTextBuffers[zoneId] = matrixTextFromUtf8(in);
+    return gZoneTextBuffers[zoneId].c_str();
+  }
+
+  bool isZonedMessage(const MessageItem& m) {
+    return (m.zone_from > 0 && m.zone_to > 0);
+  }
+
+  bool zonesOverlap(const MessageItem& a, const MessageItem& b) {
+    if (!isZonedMessage(a) || !isZonedMessage(b)) return true;
+    return !(a.zone_to < b.zone_from || b.zone_to < a.zone_from);
+  }
+
+  uint16_t dwellFromMessage(const MessageItem& m) {
+    uint32_t chosen = (m.dwell_ms >= 0) ? (uint32_t)m.dwell_ms : App::params.dwell;
+    return (chosen > 65535U) ? 65535U : (uint16_t)chosen;
   }
 }
 
@@ -174,9 +201,60 @@ namespace Display {
 
   void nextMessage() {
     if (App::params.messages.empty()) return;
-    const MessageItem& m = App::params.messages[App::msgIndex];
-    startWith(m.text, m.eff_in, m.eff_out, m.dwell_ms);
-    App::msgIndex = (App::msgIndex + 1) % App::params.messages.size();
+
+    const size_t total = App::params.messages.size();
+    const size_t startIdx = App::msgIndex;
+    const MessageItem& first = App::params.messages[startIdx];
+
+    // Standardfall: kein Bereich angegeben -> komplette Anzeige wie bisher
+    if (!isZonedMessage(first)) {
+      startWith(first.text, first.eff_in, first.eff_out, first.dwell_ms);
+      App::msgIndex = (App::msgIndex + 1) % total;
+      return;
+    }
+
+    // Bereichsmodus:
+    // - aufeinanderfolgende nicht-überlappende Bereiche gleichzeitig anzeigen
+    // - sobald eine Überlappung auftritt, im nächsten Zyklus fortsetzen (nacheinander)
+    std::vector<size_t> group;
+    group.reserve(total);
+    group.push_back(startIdx);
+
+    size_t idx = (startIdx + 1) % total;
+    while (idx != startIdx) {
+      const MessageItem& candidate = App::params.messages[idx];
+      if (!isZonedMessage(candidate)) break;
+      if (group.size() >= DISPLAY_ZONE_LIMIT) break;
+
+      bool hasOverlap = false;
+      for (size_t gidx : group) {
+        if (zonesOverlap(App::params.messages[gidx], candidate)) {
+          hasOverlap = true;
+          break;
+        }
+      }
+      if (hasOverlap) break;
+
+      group.push_back(idx);
+      idx = (idx + 1) % total;
+    }
+
+    if (App::matrix == nullptr) return;
+
+    for (size_t zoneId = 0; zoneId < group.size(); ++zoneId) {
+      const MessageItem& m = App::params.messages[group[zoneId]];
+      const uint8_t firstModule = (uint8_t)constrain(m.zone_from - 1, 0, (int)App::cfg.displayCount - 1);
+      const uint8_t lastModule  = (uint8_t)constrain(m.zone_to   - 1, 0, (int)App::cfg.displayCount - 1);
+      const String inName  = m.eff_in.length()  ? m.eff_in  : App::params.effect_in;
+      const String outName = m.eff_out.length() ? m.eff_out : App::params.effect_out;
+
+      App::matrix->setZone((uint8_t)zoneId, firstModule, lastModule);
+      App::matrix->displayZoneText((uint8_t)zoneId, renderZoneTextPtr(zoneId, m.text), PA_CENTER, App::params.speed,
+                                   dwellFromMessage(m), effectFromNameIn(inName), effectFromNameOut(outName));
+    }
+    App::matrix->displayReset();
+
+    App::msgIndex = (App::msgIndex + group.size()) % total;
   }
 
   void startInfoScroll() {
