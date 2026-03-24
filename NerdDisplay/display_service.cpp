@@ -33,13 +33,13 @@ namespace {
   uint8_t fontCharDegree[]  = { 3, 0x06, 0x09, 0x06 };             // °
 
   void installSpecialChars() {
-    App::matrix.addChar(CHAR_AE_UPPER, fontCharAeUpper);
-    App::matrix.addChar(CHAR_AE_LOWER, fontCharAeLower);
-    App::matrix.addChar(CHAR_OE_UPPER, fontCharOeUpper);
-    App::matrix.addChar(CHAR_OE_LOWER, fontCharOeLower);
-    App::matrix.addChar(CHAR_UE_UPPER, fontCharUeUpper);
-    App::matrix.addChar(CHAR_UE_LOWER, fontCharUeLower);
-    App::matrix.addChar(CHAR_DEGREE,   fontCharDegree);
+    App::matrix->addChar(CHAR_AE_UPPER, fontCharAeUpper);
+    App::matrix->addChar(CHAR_AE_LOWER, fontCharAeLower);
+    App::matrix->addChar(CHAR_OE_UPPER, fontCharOeUpper);
+    App::matrix->addChar(CHAR_OE_LOWER, fontCharOeLower);
+    App::matrix->addChar(CHAR_UE_UPPER, fontCharUeUpper);
+    App::matrix->addChar(CHAR_UE_LOWER, fontCharUeLower);
+    App::matrix->addChar(CHAR_DEGREE,   fontCharDegree);
   }
 
   String matrixTextFromUtf8(const String& in) {
@@ -121,47 +121,53 @@ static textEffect_t effectFromNameOut(const String& n) { return effFromName(EFFE
 namespace Display {
 
   void begin() {
-    App::matrix.begin();
+    if (App::matrix == nullptr) return;
+    App::matrix->begin();
     installSpecialChars();
     applyParams();
-    App::matrix.displayClear();
+    App::matrix->displayClear();
   }
 
   void applyParams() {
-    App::matrix.setIntensity(App::params.brightness);
+    if (App::matrix == nullptr) return;
+    App::matrix->setIntensity(App::params.brightness);
   }
 
   void showImmediate(const String& s, uint32_t dwellMs) {
+    if (App::matrix == nullptr) return;
     uint16_t pause = (dwellMs > 65535U) ? 65535U : (uint16_t)dwellMs;
-    App::matrix.displayText(renderTextPtr(s), PA_CENTER, App::params.speed, pause, PA_PRINT, PA_NO_EFFECT);
-    App::matrix.displayReset();
-    App::matrix.displayAnimate();
+    App::matrix->displayText(renderTextPtr(s), PA_CENTER, App::params.speed, pause, PA_PRINT, PA_NO_EFFECT);
+    App::matrix->displayReset();
+    App::matrix->displayAnimate();
   }
 
   void startWith(const String& s) {
+    if (App::matrix == nullptr) return;
     uint16_t pause = (App::params.dwell > 65535U) ? 65535U : (uint16_t)App::params.dwell;
-    App::matrix.displayText(renderTextPtr(s), PA_CENTER, App::params.speed, pause,
+    App::matrix->displayText(renderTextPtr(s), PA_CENTER, App::params.speed, pause,
                             effectFromNameIn(App::params.effect_in),
                             effectFromNameOut(App::params.effect_out));
   }
 
   void startWith(const String& s, const String& effInName, const String& effOutName) {
+    if (App::matrix == nullptr) return;
     const String inName  = effInName.length()  ? effInName  : App::params.effect_in;
     const String outName = effOutName.length() ? effOutName : App::params.effect_out;
     uint16_t pause = (App::params.dwell > 65535U) ? 65535U : (uint16_t)App::params.dwell;
-    App::matrix.displayText(renderTextPtr(s), PA_CENTER, App::params.speed, pause,
+    App::matrix->displayText(renderTextPtr(s), PA_CENTER, App::params.speed, pause,
                             effectFromNameIn(inName),
                             effectFromNameOut(outName));
   }
 
   void startWith(const String& s, const String& effInName, const String& effOutName, int32_t dwellOverrideMs) {
+    if (App::matrix == nullptr) return;
     const String inName  = effInName.length()  ? effInName  : App::params.effect_in;
     const String outName = effOutName.length() ? effOutName : App::params.effect_out;
 
     uint32_t chosen = (dwellOverrideMs >= 0) ? (uint32_t)dwellOverrideMs : App::params.dwell;
     uint16_t pause  = (chosen > 65535U) ? 65535U : (uint16_t)chosen;
 
-    App::matrix.displayText(renderTextPtr(s), PA_CENTER, App::params.speed, pause,
+    App::matrix->displayText(renderTextPtr(s), PA_CENTER, App::params.speed, pause,
                             effectFromNameIn(inName),
                             effectFromNameOut(outName));
   }
@@ -174,14 +180,16 @@ namespace Display {
   }
 
   void startInfoScroll() {
+    if (App::matrix == nullptr) return;
     const String combined = WiFi.localIP().toString() + ", " + App::mdnsHost + ".local, ";
     static char infoText[128];
     combined.toCharArray(infoText, sizeof(infoText));
-    App::matrix.displayText(infoText, PA_CENTER, 40, 0, PA_SCROLL_LEFT, PA_NO_EFFECT);
-    App::matrix.displayReset();
+    App::matrix->displayText(infoText, PA_CENTER, 40, 0, PA_SCROLL_LEFT, PA_NO_EFFECT);
+    App::matrix->displayReset();
   }
 
   bool animateOnce() {
-    return App::matrix.displayAnimate();
+    if (App::matrix == nullptr) return false;
+    return App::matrix->displayAnimate();
   }
 }

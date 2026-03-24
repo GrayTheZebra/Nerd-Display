@@ -1,7 +1,7 @@
 #include "app.h"
 
 namespace App {
-  MD_Parola matrix(HARDWARE_TYPE, PIN_CS, MAX_DEVICES);
+  MD_Parola* matrix = nullptr;
   ESP8266WebServer server(80);
   WiFiClient net;
   PubSubClient mqtt(net);
@@ -19,6 +19,10 @@ namespace App {
   bool ipScrollMode = false;
   uint8_t msgIndex = 0;
   unsigned long lastMqttReconnect = 0;
+
+  uint8_t sanitizedDisplayCount(uint8_t requested) {
+    return constrain(requested, MIN_DEVICES, MAX_DEVICES);
+  }
 
   void setRuntimeDefaults() {
     params.brightness = 3;

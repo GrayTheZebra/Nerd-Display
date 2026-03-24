@@ -46,6 +46,7 @@ namespace ConfigStore {
     doc["mqttPass"] = App::cfg.mqttPass;
     doc["mqttBase"] = normalizedBase(App::cfg.mqttBase);
     doc["mdnsName"] = App::cfg.mdnsName;
+    doc["displayCount"] = App::sanitizedDisplayCount(App::cfg.displayCount);
 
     File f = LittleFS.open(CONF_PATH, "w");
     if (!f) return;
@@ -66,6 +67,7 @@ namespace ConfigStore {
       App::cfg.mqttPass = doc["mqttPass"] | App::cfg.mqttPass;
       App::cfg.mqttBase = normalizedBase((const char*)(doc["mqttBase"] | App::cfg.mqttBase.c_str()));
       App::cfg.mdnsName = doc["mdnsName"] | App::cfg.mdnsName;
+      App::cfg.displayCount = App::sanitizedDisplayCount((uint8_t)(doc["displayCount"] | App::cfg.displayCount));
     }
     f.close();
   }

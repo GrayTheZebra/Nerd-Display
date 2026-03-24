@@ -1,6 +1,6 @@
 # Nerd-Display (ESP8266 + MD\_Parola + MQTT + WebUI)
 
-Zeigt Texte/Werte auf einer 4x MAX7219 (FC16) Matrix an.
+Zeigt Texte/Werte auf einer MAX7219-Matrix (FC16) mit konfigurierbarer Modulanzahl an.
 Konfiguration per WebUI (LittleFS) **und** MQTT.
 Unterstützt globale und per-Message Ein-/Ausblendeffekte sowie individuelle Anzeigedauer (dwell) je Nachricht.
 
@@ -15,6 +15,7 @@ Unterstützt globale und per-Message Ein-/Ausblendeffekte sowie individuelle Anz
   * `meta/*` (Bootstrapping-Infos)
 * Bootstrapping: Setzt beim ersten Connect alle Defaultwerte
 * WebUI (LittleFS) für Konfiguration
+* Konfigurierbare Anzahl verketteter MAX7219-Module (1..32) via WebUI
 * Mehrere Nachrichten in einer Schleife rotierend anzeigen
 
 ## 📂 Ordnerstruktur
