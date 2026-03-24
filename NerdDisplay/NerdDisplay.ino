@@ -29,6 +29,11 @@ void setup() {
   // Eindeutige ID aus MAC
   App::deviceId = ConfigStore::idFromMAC();
 
+  // Display-Instanz mit konfigurierbarer Modulanzahl erzeugen
+  const uint8_t displayCount = App::sanitizedDisplayCount(App::cfg.displayCount);
+  App::cfg.displayCount = displayCount;
+  App::matrix = new MD_Parola(App::HARDWARE_TYPE, App::PIN_CS, displayCount);
+
   // Display initialisieren + Runtime-Defaults
   Display::begin();
   App::setRuntimeDefaults();
@@ -83,7 +88,7 @@ void setup() {
 void loop() {
   // Modus ohne MQTT: nur Info-Scroll + Webserver bedienen
   if (App::ipScrollMode) {
-    if (Display::animateOnce()) App::matrix.displayReset();
+    if (Display::animateOnce()) App::matrix->displayReset();
     App::server.handleClient();
     return;
   }

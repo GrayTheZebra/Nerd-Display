@@ -13,6 +13,7 @@ struct PersistentConfig {
   String   mqttPass;
   String   mqttBase;   // ohne trailing Slash
   String   mdnsName;   // kurzer Suffix
+  uint8_t  displayCount = 4; // Anzahl MAX7219-Module in Reihe
 };
 
 struct MessageItem {
@@ -34,11 +35,13 @@ struct RuntimeParams {
 namespace App {
   // Hardware-Konstante/n
   static const MD_MAX72XX::moduleType_t HARDWARE_TYPE = MD_MAX72XX::FC16_HW;
-  static const uint8_t MAX_DEVICES = 4;
+  static const uint8_t MIN_DEVICES = 1;
+  static const uint8_t MAX_DEVICES = 32;
+  uint8_t sanitizedDisplayCount(uint8_t requested);
   static const uint8_t PIN_CS = D2;
 
   // Globale Instanzen
-  extern MD_Parola matrix;
+  extern MD_Parola* matrix;
   extern ESP8266WebServer server;
   extern WiFiClient net;
   extern PubSubClient mqtt;

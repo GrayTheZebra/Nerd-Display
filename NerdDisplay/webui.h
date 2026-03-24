@@ -197,6 +197,16 @@ html[data-theme="dark"] .danger {
           </div>
         </div>
 
+        <h2 style="margin-top:18px">Display</h2>
+        <div class="grid cols-2">
+          <label>Anzahl MAX7219-Module in Reihe
+            <input name="displayCount" type="number" min="%%displayMin%%" max="%%displayMax%%" value="%%displayCount%%">
+          </label>
+          <div>
+            <p class="small">Wertebereich: %%displayMin%% bis %%displayMax%%. Änderung wird nach dem Speichern aktiv.</p>
+          </div>
+        </div>
+
         <div class="actions">
           <button class="btn primary" type="submit">Speichern</button>
           <a class="btn secondary" href="/">Neu laden</a>

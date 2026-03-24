@@ -22,6 +22,9 @@ namespace {
     page.replace("%%mqttPass%%", App::cfg.mqttPass);
     page.replace("%%mqttBase%%", App::cfg.mqttBase);
     page.replace("%%mdnsName%%", App::cfg.mdnsName);
+    page.replace("%%displayCount%%", String(App::cfg.displayCount));
+    page.replace("%%displayMin%%", String(App::MIN_DEVICES));
+    page.replace("%%displayMax%%", String(App::MAX_DEVICES));
     return page;
   }
 
@@ -66,6 +69,7 @@ namespace {
     App::cfg.mqttPass = App::server.arg("mqttPass");
     App::cfg.mqttBase = ConfigStore::normalizedBase(App::server.arg("mqttBase"));
     App::cfg.mdnsName = App::server.arg("mdnsName"); App::cfg.mdnsName.trim(); App::cfg.mdnsName.toLowerCase();
+    App::cfg.displayCount = App::sanitizedDisplayCount((uint8_t)App::server.arg("displayCount").toInt());
 
     // Retained im alten Topic entfernen, wenn Base geändert wurde
     if (oldBase != App::cfg.mqttBase && App::cfg.mqttHost.length()) {
