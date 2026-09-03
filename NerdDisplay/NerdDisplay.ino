@@ -13,6 +13,7 @@
 #include "config_store.h"
 #include "display_service.h"
 #include "mqtt_service.h"
+#include "home_assistant_discovery.h"
 #include "web_handlers.h"
 
 void setup() {
@@ -80,7 +81,9 @@ void setup() {
 
   // Falls MQTT konfiguriert: verbinden und erste Nachricht anzeigen
   if (!App::ipScrollMode) {
-    Mqtt::reconnect();
+    if (Mqtt::reconnect()) {
+      HomeAssistantDiscovery::publish();
+    }
     Display::nextMessage();
   }
 }
@@ -104,7 +107,9 @@ void loop() {
     const unsigned long now = millis();
     if (now - App::lastMqttReconnect > 3000) {
       App::lastMqttReconnect = now;
-      Mqtt::reconnect();
+      if (Mqtt::reconnect()) {
+        HomeAssistantDiscovery::publish();
+      }
     }
   } else {
     Mqtt::loop();
