@@ -13,10 +13,27 @@ Unterstützt globale und per-Message Ein-/Ausblendeffekte sowie individuelle Anz
   * `set/*` (Kommandos)
   * `state/*` (retained States)
   * `meta/*` (Bootstrapping-Infos)
+* **Home Assistant MQTT Discovery**: Das Display wird automatisch als MQTT-Gerät angelegt
 * Bootstrapping: Setzt beim ersten Connect alle Defaultwerte
 * WebUI (LittleFS) für Konfiguration
 * Konfigurierbare Anzahl verketteter MAX7219-Module (1..32) via WebUI
 * Mehrere Nachrichten in einer Schleife rotierend anzeigen
+
+## 🏠 Home Assistant
+
+Wenn Home Assistant mit demselben MQTT-Broker verbunden ist, veröffentlicht das Nerd-Display beim Verbinden automatisch retained MQTT-Discovery-Konfigurationen unter `homeassistant/.../config`.
+
+In Home Assistant werden dabei folgende Entitäten angelegt:
+
+* **Text** (`text`) – angezeigten Text setzen
+* **Helligkeit** (`number`) – 0 bis 15
+* **Geschwindigkeit** (`number`) – 1 bis 65535
+* **Anzeigedauer** (`number`) – 0 bis 600000 ms
+* **Einblendeffekt** (`select`)
+* **Ausblendeffekt** (`select`)
+* Diagnose-Sensoren für **IP-Adresse**, **mDNS** und **Status**
+
+Alle Instanzen erhalten anhand der Geräte-ID eigene `unique_id`-Werte und erscheinen gemeinsam unter einem MQTT-Gerät. Die bestehenden Nerd-Display MQTT-Topics bleiben unverändert; Home Assistant Discovery kommt nur zusätzlich dazu.
 
 ## 📂 Ordnerstruktur
 
@@ -27,6 +44,7 @@ config_store.h / config_store.cpp
 display_service.h / display_service.cpp
 mqtt_service.h / mqtt_service.cpp
 mqtt_topics.h
+home_assistant_discovery.h / home_assistant_discovery.cpp
 web_handlers.h / web_handlers.cpp
 webui.h
 ```
