@@ -26,6 +26,7 @@ Wenn Home Assistant mit demselben MQTT-Broker verbunden ist, veröffentlicht das
 In Home Assistant werden dabei folgende Entitäten angelegt:
 
 * **Text** (`text`) – angezeigten Text setzen
+* **Anzeige leeren** (`button`) – aktuelle Animation und Nachrichtenliste löschen
 * **Helligkeit** (`number`) – 0 bis 15
 * **Geschwindigkeit** (`number`) – 1 bis 65535
 * **Anzeigedauer** (`number`) – 0 bis 600000 ms
@@ -160,4 +161,4 @@ In der WebUI unter **OTA-Update** ein Passwort setzen und speichern. Nach dem Ne
 
 ## Display per MQTT leeren
 
-An `<baseTopic>/set/clear` eine Nachricht mit beliebiger Payload senden, **ohne Retain**. Die aktuelle Animation wird beendet und alle gespeicherten Nachrichten werden entfernt; `state/text` wird als leerer String veröffentlicht. Ein neuer Text an `<baseTopic>/set/text` startet die Anzeige wieder. Retained `set/text`-Nachrichten vom Broker können beim erneuten Verbinden die Anzeige wieder befüllen; für dauerhaft leere Anzeige auch diese retained Nachricht entfernen.
+An `<baseTopic>/set/clear` eine Nachricht mit beliebiger Payload senden, **ohne Retain**. Die aktuelle Animation wird beendet und alle gespeicherten Nachrichten werden entfernt; `state/text` wird als leerer String veröffentlicht. Ein neuer Text an `<baseTopic>/set/text` startet die Anzeige wieder. In Home Assistant erscheint nach dem Firmware-Update und der nächsten MQTT-Verbindung die Schaltfläche **Anzeige leeren** beim Nerd-Display. Retained `set/text`-Nachrichten vom Broker können beim erneuten Verbinden die Anzeige wieder befüllen; für dauerhaft leere Anzeige auch diese retained Nachricht entfernen.
