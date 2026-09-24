@@ -6,6 +6,7 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
+#include <ArduinoOTA.h>
 #include <LittleFS.h>
 #include <WiFiManager.h>
 
@@ -64,6 +65,13 @@ void setup() {
     Serial.println(F("[mDNS] Start fehlgeschlagen."));
   }
 
+  // Passwortgeschützte ArduinoOTA-Updates im lokalen Netzwerk.
+  if (App::cfg.otaPassword.length()) {
+    ArduinoOTA.setHostname(App::mdnsHost.c_str());
+    ArduinoOTA.setPassword(App::cfg.otaPassword.c_str());
+    ArduinoOTA.begin();
+  }
+
   // MQTT optional: wenn kein Host gesetzt, Info-Scroll anzeigen
   App::ipScrollMode = (App::cfg.mqttHost.length() == 0);
   if (App::ipScrollMode) {
@@ -89,6 +97,7 @@ void setup() {
 }
 
 void loop() {
+  if (App::cfg.otaPassword.length()) ArduinoOTA.handle();
   // Modus ohne MQTT: nur Info-Scroll + Webserver bedienen
   if (App::ipScrollMode) {
     if (Display::animateOnce()) App::matrix->displayReset();
