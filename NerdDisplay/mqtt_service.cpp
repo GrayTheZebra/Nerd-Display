@@ -37,7 +37,7 @@ namespace {
       App::params.messages.clear();
       App::msgIndex = 0;
       Display::clear();
-      publishStateKey("text", "");
+      publishStateKeyQuoted("text", "");
       return;
     }
 
