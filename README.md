@@ -153,3 +153,11 @@ Folgende Werte sind für `in` und `out` gültig (Großschreibung beachten):
 ## 📜 Lizenz
 
 MIT (siehe LICENSE)
+
+## OTA-Updates
+
+In der WebUI unter **OTA-Update** ein Passwort setzen und speichern. Nach dem Neustart erscheint das ESP8266 im Arduino-IDE-Netzwerkport als `nerd-display-<mdnsName>.local` (Port 8266). Den ersten Sketch mit OTA-Unterstützung einmal per USB flashen; danach lassen sich neue Sketches per WLAN mit dem gesetzten Passwort hochladen. OTA funktioniert auch ohne konfigurierten MQTT-Broker. Beim Flashen eine Flash-Layout-Option mit ausreichend freiem Platz für ein zweites Firmware-Image wählen.
+
+## Display per MQTT leeren
+
+An `<baseTopic>/set/clear` eine Nachricht mit beliebiger Payload senden, **ohne Retain**. Die aktuelle Animation wird beendet und alle gespeicherten Nachrichten werden entfernt; `state/text` wird als leerer String veröffentlicht. Ein neuer Text an `<baseTopic>/set/text` startet die Anzeige wieder. Retained `set/text`-Nachrichten vom Broker können beim erneuten Verbinden die Anzeige wieder befüllen; für dauerhaft leere Anzeige auch diese retained Nachricht entfernen.
