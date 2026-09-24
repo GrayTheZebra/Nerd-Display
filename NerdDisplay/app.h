@@ -3,7 +3,7 @@
 #include <ESP8266WebServer.h>
 #include <PubSubClient.h>
 #include <MD_Parola.h>
-#include <MD_MAX72XX.h>
+#include <MD_MAX72xx.h>
 #include <vector>
 
 struct PersistentConfig {
