@@ -32,6 +32,15 @@ namespace {
     // legacy has_init
     if (t.endsWith("/has_init"))              { App::hasInitFlag = (raw == "1");      return; }
 
+    // Eigenes Kommando ohne Payload.
+    if (t == Topics::set("clear")) {
+      App::params.messages.clear();
+      App::msgIndex = 0;
+      Display::clear();
+      publishStateKey("text", "");
+      return;
+    }
+
     // brightness
     if (t.endsWith("/set/brightness")) {
       if (raw.length() == 0) return;
@@ -187,9 +196,9 @@ namespace Mqtt {
     ::publishStateKeyQuoted("effect_out", App::params.effect_out);
     ::publishStateKeyQuoted("effect",     App::params.effect_in); // legacy
     const String txt = App::params.messages.empty()
-      ? String("Nerd-Display")
+      ? String()
       : App::params.messages[0].text;
-    ::publishSetKey("text", txt);
+    ::publishStateKeyQuoted("text", txt);
   }
 
   void publishInfo(const String& mode) {

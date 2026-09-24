@@ -11,6 +11,7 @@ namespace Display {
   void startWith(const String& s, const String& effInName, const String& effOutName); // per-Message Effekte, globaler dwell
   void startWith(const String& s, const String& effInName, const String& effOutName, int32_t dwellOverrideMs); // per-Message Effekte + per-Message dwell
 
+  void clear();                 // Animation stoppen und Matrix sofort leeren
   void nextMessage();           // nimmt MessageItem & nutzt ggf. dwell-Override
   void startInfoScroll();       // IP + mDNS scrollen
   bool animateOnce();           // true, wenn eine Animation „fertig“ ist

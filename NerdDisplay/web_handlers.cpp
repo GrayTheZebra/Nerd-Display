@@ -69,6 +69,8 @@ namespace {
     App::cfg.mqttPass = App::server.arg("mqttPass");
     App::cfg.mqttBase = ConfigStore::normalizedBase(App::server.arg("mqttBase"));
     App::cfg.mdnsName = App::server.arg("mdnsName"); App::cfg.mdnsName.trim(); App::cfg.mdnsName.toLowerCase();
+    // Leeres Feld behält das vorhandene Passwort; ein neues ersetzt es.
+    if (App::server.arg("otaPassword").length()) App::cfg.otaPassword = App::server.arg("otaPassword");
     App::cfg.displayCount = App::sanitizedDisplayCount((uint8_t)App::server.arg("displayCount").toInt());
 
     // Retained im alten Topic entfernen, wenn Base geändert wurde

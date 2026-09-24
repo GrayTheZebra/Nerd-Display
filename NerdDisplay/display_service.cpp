@@ -172,6 +172,15 @@ namespace Display {
                             effectFromNameOut(outName));
   }
 
+  void clear() {
+    if (App::matrix == nullptr) return;
+    App::matrix->displayClear();
+    // Eine leere, beendete Animation verhindert erneutes Anzeigen im loop().
+    App::matrix->displayText("", PA_CENTER, App::params.speed, 0, PA_PRINT, PA_NO_EFFECT);
+    App::matrix->displayReset();
+    App::matrix->displayAnimate();
+  }
+
   void nextMessage() {
     if (App::params.messages.empty()) return;
     const MessageItem& m = App::params.messages[App::msgIndex];

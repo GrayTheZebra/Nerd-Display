@@ -197,6 +197,14 @@ html[data-theme="dark"] .danger {
           </div>
         </div>
 
+        <h2 style="margin-top:18px">OTA-Update</h2>
+        <div class="grid cols-2">
+          <label>OTA-Passwort (leer lassen, um das vorhandene zu behalten)
+            <input name="otaPassword" type="password" autocomplete="new-password" placeholder="Neues OTA-Passwort">
+          </label>
+          <p class="small">OTA wird nach dem Speichern und Neustart mit gesetztem Passwort aktiviert. Erster Upload erfolgt per USB.</p>
+        </div>
+
         <h2 style="margin-top:18px">Display</h2>
         <div class="grid cols-2">
           <label>Anzahl MAX7219-Module in Reihe

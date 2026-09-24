@@ -13,6 +13,7 @@ struct PersistentConfig {
   String   mqttPass;
   String   mqttBase;   // ohne trailing Slash
   String   mdnsName;   // kurzer Suffix
+  String   otaPassword; // leer = OTA deaktiviert
   uint8_t  displayCount = 4; // Anzahl MAX7219-Module in Reihe
 };
 
