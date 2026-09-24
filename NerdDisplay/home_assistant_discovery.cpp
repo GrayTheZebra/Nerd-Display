@@ -82,6 +82,16 @@ namespace {
     publishDoc(discoveryTopic("text", "text"), doc);
   }
 
+  void publishClearButton() {
+    DynamicJsonDocument doc(1024);
+    JsonObject root = doc.to<JsonObject>();
+    addCommon(root, "clear", "Anzeige leeren");
+    root["command_topic"] = Topics::set("clear");
+    root["payload_press"] = "CLEAR";
+    root["icon"] = "mdi:eraser";
+    publishDoc(discoveryTopic("button", "clear"), doc);
+  }
+
   void publishInfoSensor(const String& objectId, const String& name,
                          const String& jsonKey, const String& icon) {
     DynamicJsonDocument doc(1024);
@@ -96,7 +106,7 @@ namespace {
 
   void publishCurrentTextState() {
     const String text = App::params.messages.empty()
-      ? String("Nerd-Display")
+      ? String()
       : App::params.messages[0].text;
 
     DynamicJsonDocument doc(512);
@@ -112,6 +122,7 @@ namespace HomeAssistantDiscovery {
     if (!App::mqtt.connected()) return;
 
     publishText();
+    publishClearButton();
     publishNumber("brightness", "Helligkeit", "brightness", 0, 15, 1, "slider");
     publishNumber("speed", "Geschwindigkeit", "speed", 1, 65535, 1);
     publishNumber("dwell", "Anzeigedauer", "dwell", 0, 600000, 100);
